@@ -8,15 +8,39 @@ if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
 
         echo >&2 "WordPress not found in $(pwd) - installing now..."
         if [ "$(ls -A)" ]; then
-            echo >&2 "WARNING: $(pwd) is not empty - press Ctrl+C now if this is an error!"
-            ( set -x; ls -A; sleep 10 )
-            rm -R ./*
+            echo >&2 "WARNING: $(pwd) is not empty - aborting install"
+            exit 1
+            # echo >&2 "WARNING: $(pwd) is not empty - press Ctrl+C now if this is an error!"
+            # ( set -x; ls -A; sleep 30 )
+            # rm -R ./*
         fi
 
-        wp core download --path=wp --allow-root --debug
-        wp core config \
+        echo >&2 "Download the latest vesrion of Wordpress"
+
+        wp core download \
+            --version=4.7.5 \
+            --skip-plugins \
+            --skip-themes \
+            --skip-packages \
+            --force \
+            --path=/var/www/html/wp \
             --allow-root \
-            --path=wp \
+            --debug
+            >&2
+
+        echo >&2 "Verify the checksums for the downloaded files"
+
+        wp core verify-checksums \
+            --path=/var/www/html/wp \
+            --allow-root
+            >&2
+
+        echo >&2 "Setup up wp-config.php"
+
+        wp core config \
+            --path=/var/www/html/wp \
+            --allow-root \
+            --debug \
             --skip-check \
             --dbname=${MYSQL_DATABASE:="wordpress"} \
             --dbuser=${MYSQL_USER:=root} \
@@ -47,38 +71,59 @@ EOPHP
 
         echo >&2 "Created wp-config.php for ${DEV_DOMAIN}"
 
+        until exec 6<>/dev/tcp/mysql/3306; do
+            sleep 10
+            echo >&2 "Waiting for MySQL"
+        done
+
+        echo >&2 "MySQL connection available, begin Wordpress install"
+
         wp core install \
-            --allow-root \
-            --path=wp \
             --url=http://www.${DEV_DOMAIN} \
             --title="${WORDPRESS_SITE_TITLE:='New Wordpress Site'}" \
             --admin_user="${WORDPRESS_ADMIN_USER:=admin}" \
             --admin_password="${WORDPRESS_ADMIN_PASS:=letmein123}" \
             --admin_email="${WORDPRESS_ADMIN_EMAIL:=noone@nowhere.org}" \
+            --skip-email \
+            --skip-plugins \
+            --skip-themes \
+            --skip-packages \
+            --path=/var/www/html/wp \
+            --allow-root \
+            --debug
+            >&2
 
         echo >&2 "Installed Wordpress"
 
         wp option update siteurl "http://www.${DEV_DOMAIN}/wp" \
+            --path=/var/www/html/wp \
             --allow-root \
-            --path=wp
+            --debug
+            >&2
 
         echo >&2 "Updated Site URL to http://www.${DEV_DOMAIN}/wp"
 
         wp option update home "http://www.${DEV_DOMAIN}" \
+            --path=/var/www/html/wp \
             --allow-root \
-            --path=wp
+            --debug
+            >&2
 
         echo >&2 "Updated Home to http://www.${DEV_DOMAIN}"
 
         wp rewrite structure '/%category%/%post_id%-%postname%' \
+            --path=/var/www/html/wp \
             --allow-root \
-            --path=wp
+            --debug
+            >&2
 
         echo >&2 "Changed the Permalink rewrite structure"
 
         wp rewrite flush \
+            --path=/var/www/html/wp \
             --allow-root \
-            --path=wp
+            --debug
+            >&2
 
         echo >&2 "Flushed the Permalink cache"
 
@@ -95,9 +140,12 @@ EOPHP
 
     fi
 
+    echo >&2 "Change permissions on Wordpress files"
+
     chown -R www-data:www-data /var/www/html
     find /var/www/html -type f -exec chmod 666 {} \;
     find /var/www/html -type d -exec chmod 777 {} \;
+
 fi
 
 exec "$@"

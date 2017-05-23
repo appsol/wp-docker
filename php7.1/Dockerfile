@@ -1,4 +1,4 @@
-FROM php:5.6-apache
+FROM php:7.1-apache
 
 RUN a2enmod rewrite expires
 
@@ -27,6 +27,8 @@ RUN { \
 WORKDIR /tmp
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
 RUN chmod +x wp-cli.phar
+RUN ./wp-cli.phar cli update --yes --allow-root
+RUN ./wp-cli.phar cli version --allow-root
 RUN mv wp-cli.phar /usr/local/bin/wp
 
 COPY wp.sh /usr/local/bin/

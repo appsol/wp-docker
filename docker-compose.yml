@@ -14,7 +14,7 @@ services:
     depends_on:
       - db
     env_file: .env
-    restart: on-failure
+    # restart: on-failure
   db:
     image: mariadb:latest
     container_name: wp-cli-docker_db
