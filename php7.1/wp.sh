@@ -4,21 +4,16 @@ set -e
 if [[ "$1" == apache2* ]] || [ "$1" == php-fpm ]; then
     wp --info --allow-root
 
-    if ! [ -e index.php -a -d wp-content ]; then
-
+    if [ "$(ls -A)" ]; then
+        echo >&2 "WARNING: $(pwd) is not empty - aborting install"
+    else
         echo >&2 "WordPress not found in $(pwd) - installing now..."
-        if [ "$(ls -A)" ]; then
-            echo >&2 "WARNING: $(pwd) is not empty - aborting install"
-            exit 1
-            # echo >&2 "WARNING: $(pwd) is not empty - press Ctrl+C now if this is an error!"
-            # ( set -x; ls -A; sleep 30 )
-            # rm -R ./*
-        fi
 
-        echo >&2 "Download the latest vesrion of Wordpress"
+        echo >&2 "Download the latest version of Wordpress"
 
         wp core download \
-            --version=4.7.5 \
+            --version=latest \
+            --locale=en_GB \
             --skip-plugins \
             --skip-themes \
             --skip-packages \
@@ -135,7 +130,7 @@ EOPHP
         echo >&2 'Moved index.php into the site root and updated location of wp-blog-header.php'
         mv wp/wp-config.php .
         echo >&2 'Moved wp-config.php into the site root'
-        
+
         echo >&2 "Complete! WordPress has been successfully copied to $(pwd)"
 
     fi

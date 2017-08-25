@@ -2,13 +2,10 @@ version: '2'
 services:
   web:
     build: .
-    # container_name: wp-cli-docker_web
-    # domainname: wp-cli-docker.dev
-    # hostname: wp-cli-docker
+    image: wp-cli-docker:apache-7.0
+    tty: true
     ports:
       - 80:80
-    # volumes:
-    #   - ./public_html:/var/www/html
     links:
       - db:mysql
     depends_on:
@@ -25,19 +22,12 @@ services:
       - WORDPRESS_ADMIN_USER=admin
       - WORDPRESS_ADMIN_PASS=letmein123
       - WORDPRESS_ADMIN_EMAIL=stuart@appropriatesolutions.co.uk
-    # restart: on-failure
   db:
     image: mariadb:latest
-    # container_name: wp-cli-docker_db
     ports:
       - 3306
-    # volumes:
-    #   - ./data/db:/var/lib/mysql
-    #   - ./data/import:/docker-entrypoint-initdb.d/
-    #   - ./data/conf/:/etc/mysql/conf.d
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=wpdocker
       - MYSQL_USER=wpdocker_user
       - MYSQL_PASSWORD=wpdocker_pass
-    # restart: on-failure
